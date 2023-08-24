@@ -1,0 +1,1070 @@
+﻿This network, information about its components and information systems within it are CONFIDENTIAL to Australia and New Zealand Banking Group Limited ACN 005 357 522 (ANZ). Access to or use of this network by unauthorised people (including by 
+NZ subsidiaries and their personnel) or for any other unauthorised purpose is STRICTLY PROHIBITED. This Router records and logs user IP addresses.
+nzlr-sdwan-ir01#
+nzlr-sdwan-ir01#
+nzlr-sdwan-ir01#
+nzlr-sdwan-ir01#
+nzlr-sdwan-ir01#
+nzlr-sdwan-ir01#
+nzlr-sdwan-ir01#
+nzlr-sdwan-ir01#
+nzlr-sdwan-ir01#
+nzlr-sdwan-ir01#
+nzlr-sdwan-ir01#
+nzlr-sdwan-ir01#
+nzlr-sdwan-ir01#ter
+nzlr-sdwan-ir01#terminal l
+nzlr-sdwan-ir01#terminal l 
+nzlr-sdwan-ir01#terminal le
+nzlr-sdwan-ir01#terminal length 0
+nzlr-sdwan-ir01#show run
+nzlr-sdwan-ir01#show running-config 
+Building configuration...
+
+Current configuration : 17789 bytes
+!
+! Last configuration change at 21:52:07 NZST Tue Aug 22 2023 by vmanage-admin
+!
+version 17.6
+service tcp-keepalives-in
+service tcp-keepalives-out
+service timestamps debug datetime msec
+service timestamps log datetime msec
+service password-encryption
+service call-home
+platform qfp utilization monitor load 80
+platform punt-keepalive disable-kernel-core
+!
+hostname nzlr-sdwan-ir01
+!
+boot-start-marker
+boot-end-marker
+!
+!
+vrf definition 10
+ description Service VPN
+ rd 1:10
+ !
+ address-family ipv4
+  route-target export 64928:10
+  route-target import 64928:10
+ exit-address-family
+ !
+ address-family ipv6
+ exit-address-family
+!
+vrf definition 65528
+ !
+ address-family ipv4
+ exit-address-family
+!
+vrf definition Mgmt-intf
+ description Management VPN 512 (OOB)
+ rd 1:512
+ !
+ address-family ipv4
+  route-target export 64928:512
+  route-target import 64928:512
+ exit-address-family
+ !
+ address-family ipv6
+ exit-address-family
+!
+logging buffered 512000
+logging persistent size 104857600 filesize 10485760
+no logging console
+no logging monitor
+!
+aaa new-model
+!
+!
+aaa group server tacacs+ tacacs-512
+ server-private 10.100.3.71 key 6 CEBL^ANS^HDeIWZEITW^RJKJeHQVQGPQFUMGNW^
+ server-private 10.100.131.71 key 6 DNcVT]QYaHDagRhNIcITDTaFENMLcaAFVQHeWic
+ ip vrf forwarding Mgmt-intf
+ ip tacacs source-interface GigabitEthernet0
+!
+aaa authentication login default group tacacs-512 local
+aaa authorization exec default group tacacs-512 local 
+!
+!
+!
+!
+!
+aaa server radius dynamic-author
+!
+aaa session-id common
+clock timezone NZST 12 0
+clock summer-time nzdt recurring last Sun Sep 2:00 1 Sun Apr 3:00
+fhrp version vrrp v3
+ip arp proxy disable
+!
+!
+!
+!
+!
+!
+!
+ip host nz-corpmgmt-vbd 210.55.246.166 210.55.246.181
+no ip domain lookup
+ip domain name net.anznb.co.nz
+ip cef load-sharing algorithm include-ports source destination
+no ip dhcp use class
+!
+!
+!
+login on-success log
+ipv6 unicast-routing
+ipv6 cef load-sharing algorithm include-ports source destination
+!
+!
+!
+!
+!
+!
+!
+subscriber templating
+! 
+! 
+! 
+! 
+!
+!
+!
+flow record sdwan_flow_record-005
+ description flow and application visibility records
+ match ipv4 destination address
+ match ipv4 protocol
+ match ipv4 source address
+ match routing vrf service
+ match transport destination-port
+ match transport source-port
+ collect application name
+ collect connection id long
+ collect counter bytes long
+ collect counter bytes sdwan dropped long
+ collect counter packets long
+ collect counter packets sdwan dropped long
+ collect flow end-reason
+ collect interface input
+ collect interface output
+ collect ipv4 dscp
+ collect overlay session id input
+ collect overlay session id output
+ collect timestamp absolute first
+ collect timestamp absolute last
+ collect transport tcp flags
+ collect drop cause id
+ collect sdwan sla-not-met
+ collect sdwan preferred-color-not-met
+ collect sdwan qos-queue-id
+!
+!
+flow record sdwan_flow_record_ipv6-005
+ description flow and application visibility records
+ match ipv6 destination address
+ match ipv6 protocol
+ match ipv6 source address
+ match routing vrf service
+ match transport destination-port
+ match transport source-port
+ collect application name
+ collect connection id long
+ collect counter bytes long
+ collect counter bytes sdwan dropped long
+ collect counter packets long
+ collect counter packets sdwan dropped long
+ collect flow end-reason
+ collect interface input
+ collect interface output
+ collect ipv6 dscp
+ collect overlay session id input
+ collect overlay session id output
+ collect timestamp absolute first
+ collect timestamp absolute last
+ collect transport tcp flags
+ collect drop cause id
+ collect sdwan sla-not-met
+ collect sdwan preferred-color-not-met
+ collect sdwan qos-queue-id
+!
+!
+flow exporter sdwan_flow_exporter_0
+ description export flow and application visibility records to vManage
+ destination local sdwan
+ mtu 1280
+ transport udp 5458
+ export-protocol ipfix
+ option drop-cause-table
+!
+!
+flow exporter sdwan_flow_ipv6_exporter_0
+ description export flow and application visibility records to vManage
+ destination local sdwan
+ mtu 1280
+ transport udp 5458
+ export-protocol ipfix
+ option drop-cause-table
+!
+!
+flow monitor sdwan_flow_monitor
+ description monitor flows for vManage and external collectors
+ exporter sdwan_flow_exporter_0
+ cache timeout inactive 10
+ cache timeout active 60
+ cache entries 250000
+ record sdwan_flow_record-005
+!
+!
+flow monitor sdwan_flow_monitor_ipv6
+ description monitor flows for vManage and external collectors
+ exporter sdwan_flow_ipv6_exporter_0
+ cache timeout inactive 10
+ cache timeout active 60
+ cache entries 250000
+ record sdwan_flow_record_ipv6-005
+!
+multilink bundle-name authenticated
+!
+!
+password encryption aes
+!
+!
+!
+!
+!
+!
+!
+crypto pki trustpoint SLA-TrustPoint
+ enrollment pkcs12
+ revocation-check crl
+!
+crypto pki trustpoint TP-self-signed-3535075486
+ enrollment selfsigned
+ revocation-check crl
+!
+!
+crypto pki certificate chain SLA-TrustPoint
+crypto pki certificate chain TP-self-signed-3535075486
+!
+!
+license udi pid ASR1001-X sn JAE213606N1
+license accept end user agreement
+license boot level adventerprise
+memory free low-watermark processor 374234
+!
+!
+spanning-tree extend system-id
+diagnostic bootup level minimal
+!
+username netsupp privilege 15 secret 9 $9$2VQL3l2L1kwD3k$yal2.ntvLLGwUvcEfU5fW/gK4vYoMUNl9.dupgkEzRk
+!
+redundancy
+ mode none
+!
+!
+!
+!
+no crypto ikev2 diagnose error
+!
+!
+cdp run
+!
+lldp run
+!
+! 
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+! 
+! 
+!
+!
+interface Loopback65528
+ vrf forwarding 65528
+ ip address 192.168.1.1 255.255.255.255
+!
+interface Tunnel0
+ ip unnumbered GigabitEthernet0/0/0
+ no ip redirects
+ ipv6 unnumbered GigabitEthernet0/0/0
+ no ipv6 redirects
+ tunnel source GigabitEthernet0/0/0
+ tunnel mode sdwan
+ tunnel path-mtu-discovery
+!
+interface TenGigabitEthernet0/0/0
+ no ip address
+!
+interface TenGigabitEthernet0/0/1
+ no ip address
+!
+interface GigabitEthernet0/0/0
+ description To Branch FW (via nzlr-fwpubcom-as101)
+ ip address 210.55.246.162 255.255.255.240
+ no ip redirects
+ load-interval 30
+ negotiation auto
+ arp timeout 1200
+!
+interface GigabitEthernet0/0/1
+ no ip address
+ negotiation auto
+!
+interface GigabitEthernet0/0/2
+ no ip address
+ negotiation auto
+!
+interface GigabitEthernet0/0/3
+ description nzlr-sdwan-ir02
+ vrf forwarding 10
+ ip address 10.106.17.101 255.255.255.252
+ no ip redirects
+ load-interval 30
+ negotiation auto
+ arp timeout 1200
+!
+interface GigabitEthernet0/0/4
+ description nzlr-corpcom-is02
+ vrf forwarding 10
+ ip address 10.106.18.106 255.255.255.252
+ no ip redirects
+ load-interval 30
+ negotiation auto
+ arp timeout 1200
+!
+interface GigabitEthernet0/0/5
+ description nzlr-corpcom-is01
+ vrf forwarding 10
+ ip address 10.106.17.106 255.255.255.252
+ no ip redirects
+ load-interval 30
+ negotiation auto
+ arp timeout 1200
+!
+interface GigabitEthernet0
+ description VPN512 Management Interface
+ vrf forwarding Mgmt-intf
+ ip address 10.24.92.31 255.255.255.0
+ no ip redirects
+ load-interval 30
+ negotiation auto
+ arp timeout 1200
+!
+router omp
+!
+router bgp 64928
+ bgp log-neighbor-changes
+ neighbor 10.22.7.17 remote-as 65401
+ neighbor 10.22.7.17 description nzlr-fwperiext-as01
+ neighbor 10.22.7.17 ebgp-multihop 2
+ neighbor 10.22.7.17 password 7 135C4E01530817192A
+ !
+ address-family ipv4
+  redistribute connected
+  neighbor 10.22.7.17 activate
+  distance bgp 20 200 20
+ exit-address-family
+ !
+ address-family ipv4 vrf 10
+  redistribute connected
+  redistribute omp route-map omp-to-bgp
+  neighbor 10.106.17.102 remote-as 64928
+  neighbor 10.106.17.102 description nzlr-sdwan-ir02
+  neighbor 10.106.17.102 password 7 0756785F160D0A3616
+  neighbor 10.106.17.102 activate
+  neighbor 10.106.17.102 send-community both
+  neighbor 10.106.17.102 next-hop-self
+  neighbor 10.106.17.102 route-map bgp-in in
+  neighbor 10.106.17.105 remote-as 64980
+  neighbor 10.106.17.105 description nzlr-corpcom-is01
+  neighbor 10.106.17.105 password 7 0915171A410104210A
+  neighbor 10.106.17.105 activate
+  neighbor 10.106.17.105 send-community both
+  neighbor 10.106.17.105 route-map bgp-in in
+  neighbor 10.106.18.105 remote-as 64980
+  neighbor 10.106.18.105 description nzlr-corpcom-is02
+  neighbor 10.106.18.105 password 7 154B521F5C2E381729
+  neighbor 10.106.18.105 activate
+  neighbor 10.106.18.105 send-community both
+  neighbor 10.106.18.105 route-map bgp-in in
+  distance bgp 20 200 20
+ exit-address-family
+!
+no ip http server
+no ip http secure-server
+ip forward-protocol nd
+!
+ip bgp-community new-format
+ip community-list expanded EXP-COMM-bgp-in-1 permit 64990:123
+no ip ftp passive
+ip nat settings central-policy
+ip nat settings gatekeeper-size 1024
+ip nat route vrf 65528 0.0.0.0 0.0.0.0 global
+no ip nat service H225
+no ip nat service ras
+no ip nat service rtsp udp
+no ip nat service rtsp tcp
+no ip nat service netbios-ns tcp
+no ip nat service netbios-ns udp
+no ip nat service netbios-ssn
+no ip nat service netbios-dgm
+no ip nat service ldap
+no ip nat service sunrpc udp
+no ip nat service sunrpc tcp
+no ip nat service msrpc tcp
+no ip nat service tftp
+no ip nat service rcmd
+no ip nat service pptp
+ip route 10.22.7.17 255.255.255.255 210.55.246.161
+ip route 210.55.246.176 255.255.255.240 210.55.246.161
+ip route vrf Mgmt-intf 0.0.0.0 0.0.0.0 10.24.92.254
+ip ssh time-out 60
+ip ssh version 2
+ip scp server enable
+ip visibility global flow monitor sdwan_flow_monitor input
+!
+!
+logging source-interface GigabitEthernet0 vrf Mgmt-intf
+logging host 10.103.63.1 vrf Mgmt-intf
+logging host 10.103.63.2 vrf Mgmt-intf
+logging host 10.105.248.201 vrf Mgmt-intf
+ipv6 visibility global flow monitor sdwan_flow_monitor_ipv6 input
+!
+route-map omp-to-bgp permit 1 
+ set community 64980:123
+!
+route-map omp-to-bgp deny 65535 
+!
+route-map bgp-in deny 1 
+ match community EXP-COMM-bgp-in-1
+!
+route-map bgp-in permit 65535 
+!
+snmp-server community 6 TedTSGJSFcRiGacQbcLQVHbcKHXJUTKDBfg]RLDAAB  RO
+snmp-server trap-source GigabitEthernet0
+snmp-server location Lady Ruby DC, Auckland
+snmp-server contact nzimnetworkservices@anz.com 0800 080661
+snmp-server enable traps snmp authentication linkdown linkup coldstart warmstart
+snmp-server enable traps pfr
+snmp-server enable traps flowmon
+snmp-server enable traps ds1
+snmp-server enable traps entity-perf throughput-notif
+snmp-server enable traps sdwan security policy system omp
+snmp-server enable traps call-home message-send-fail server-fail
+snmp-server enable traps tty
+snmp-server enable traps eigrp
+snmp-server enable traps ospf state-change
+snmp-server enable traps ospf errors
+snmp-server enable traps ospf retransmit
+snmp-server enable traps ospf lsa
+snmp-server enable traps ospf cisco-specific state-change nssa-trans-change
+snmp-server enable traps ospf cisco-specific state-change shamlink interface
+snmp-server enable traps ospf cisco-specific state-change shamlink neighbor
+snmp-server enable traps ospf cisco-specific errors
+snmp-server enable traps ospf cisco-specific retransmit
+snmp-server enable traps ospf cisco-specific lsa
+snmp-server enable traps casa
+snmp-server enable traps smart-license
+snmp-server enable traps license
+snmp-server enable traps aaa_server
+snmp-server enable traps atm subif
+snmp-server enable traps bfd
+snmp-server enable traps bgp
+snmp-server enable traps bgp cbgp2
+snmp-server enable traps memory bufferpeak
+snmp-server enable traps config-copy
+snmp-server enable traps config
+snmp-server enable traps config-ctid
+snmp-server enable traps dhcp
+snmp-server enable traps dial
+snmp-server enable traps diameter
+snmp-server enable traps dlsw
+snmp-server enable traps dsp card-status
+snmp-server enable traps dsp oper-state
+snmp-server enable traps dsp video-usage
+snmp-server enable traps dsp video-out-of-resource
+snmp-server enable traps fru-ctrl
+snmp-server enable traps entity
+snmp-server enable traps event-manager
+snmp-server enable traps vrrpv3
+snmp-server enable traps frame-relay multilink bundle-mismatch
+snmp-server enable traps frame-relay
+snmp-server enable traps frame-relay subif
+snmp-server enable traps hsrp
+snmp-server enable traps pimstdmib neighbor-loss invalid-register invalid-join-prune rp-mapping-change interface-election
+snmp-server enable traps ipmulticast
+snmp-server enable traps msdp
+snmp-server enable traps mvpn
+snmp-server enable traps ospfv3 state-change
+snmp-server enable traps ospfv3 errors
+snmp-server enable traps pim neighbor-change rp-mapping-change invalid-pim-message
+snmp-server enable traps pppoe
+snmp-server enable traps cpu threshold
+snmp-server enable traps pw vc
+snmp-server enable traps rsvp
+snmp-server enable traps ipsla
+snmp-server enable traps syslog
+snmp-server enable traps l2tun session
+snmp-server enable traps l2tun pseudowire status
+snmp-server enable traps pki
+snmp-server enable traps adslline
+snmp-server enable traps vdsl2line
+snmp-server enable traps ethernet evc status create delete
+snmp-server enable traps ether-oam
+snmp-server enable traps ethernet cfm cc mep-up mep-down cross-connect loop config
+snmp-server enable traps ethernet cfm crosscheck mep-missing mep-unknown service-up
+snmp-server enable traps auth-framework sec-violation
+snmp-server enable traps entity-qfp mem-res-thresh throughput-notif
+snmp-server enable traps entity-state
+snmp-server enable traps lisp
+snmp-server enable traps entity-sensor
+snmp-server enable traps flash insertion removal lowspace
+snmp-server enable traps firewall serverstatus
+snmp-server enable traps netsync
+snmp-server enable traps ptp
+snmp-server enable traps lost-ptp-slave
+snmp-server enable traps breach-ptp-offset-threshold
+snmp-server enable traps sbc adj-status
+snmp-server enable traps sbc blacklist
+snmp-server enable traps sbc congestion-alarm
+snmp-server enable traps sbc h248-ctrlr-status
+snmp-server enable traps sbc media-source
+snmp-server enable traps sbc radius-conn-status
+snmp-server enable traps sbc sla-violation
+snmp-server enable traps sbc sla-violation-rev1
+snmp-server enable traps sbc svc-state
+snmp-server enable traps sbc qos-statistics
+snmp-server enable traps srp
+snmp-server enable traps isdn call-information
+snmp-server enable traps isdn layer2
+snmp-server enable traps isdn chan-not-avail
+snmp-server enable traps isdn ietf
+snmp-server enable traps cnpd
+snmp-server enable traps entity-diag boot-up-fail hm-test-recover hm-thresh-reached scheduled-test-fail
+snmp-server enable traps ike policy add
+snmp-server enable traps ike policy delete
+snmp-server enable traps ike tunnel start
+snmp-server enable traps ike tunnel stop
+snmp-server enable traps ipsec cryptomap add
+snmp-server enable traps ipsec cryptomap delete
+snmp-server enable traps ipsec cryptomap attach
+snmp-server enable traps ipsec cryptomap detach
+snmp-server enable traps ipsec tunnel start
+snmp-server enable traps ipsec tunnel stop
+snmp-server enable traps ipsec too-many-sas
+snmp-server enable traps gdoi gm-start-registration
+snmp-server enable traps gdoi gm-registration-complete
+snmp-server enable traps gdoi gm-re-register
+snmp-server enable traps gdoi gm-rekey-rcvd
+snmp-server enable traps gdoi gm-rekey-fail
+snmp-server enable traps gdoi ks-rekey-pushed
+snmp-server enable traps gdoi gm-incomplete-cfg
+snmp-server enable traps gdoi ks-no-rsa-keys
+snmp-server enable traps gdoi ks-new-registration
+snmp-server enable traps gdoi ks-reg-complete
+snmp-server enable traps gdoi ks-role-change
+snmp-server enable traps gdoi ks-gm-deleted
+snmp-server enable traps gdoi ks-peer-reachable
+snmp-server enable traps gdoi ks-peer-unreachable
+snmp-server enable traps cef resource-failure peer-state-change peer-fib-state-change inconsistency
+snmp-server enable traps sonet
+snmp-server enable traps resource-policy
+snmp-server enable traps otn
+snmp-server enable traps nhrp nhs
+snmp-server enable traps nhrp nhc
+snmp-server enable traps nhrp nhp
+snmp-server enable traps nhrp quota-exceeded
+snmp-server enable traps isis
+snmp-server enable traps ip local pool
+snmp-server enable traps mpls rfc ldp
+snmp-server enable traps mpls ldp
+snmp-server enable traps mpls rfc traffic-eng
+snmp-server enable traps mpls traffic-eng
+snmp-server enable traps mpls fast-reroute protected
+snmp-server enable traps bulkstat collection transfer
+snmp-server enable traps alarms informational
+snmp-server enable traps voice
+snmp-server enable traps vrfmib vrf-up vrf-down vnet-trunk-up vnet-trunk-down
+snmp-server enable traps ethernet cfm alarm
+snmp-server enable traps rf
+snmp-server enable traps transceiver all
+snmp-server enable traps mpls vpn
+snmp-server enable traps mpls rfc vpn
+snmp-server host 10.103.63.1 vrf 10 version 2c 6 AYcRHFFBMZ]IbRVAQTUhORXYXaFcg_IMCQId_MAAAB udp-port 161 
+snmp-server host 10.103.63.2 vrf 10 version 2c 6 AYcRHFFBMZ]IbRVAQTUhORXYXaFcg_IMCQId_MAAAB udp-port 161 
+!
+!
+!
+!
+!
+control-plane
+!
+!
+!
+!
+!
+banner login ^CNZ Network Services Authentication^C
+banner motd ^CThis network, information about its components and information systems within it are CONFIDENTIAL to Australia and New Zealand Banking Group Limited ACN 005 357 522 (ANZ). Access to or use of this network by unauthorised people (including by 
+NZ subsidiaries and their personnel) or for any other unauthorised purpose is STRICTLY PROHIBITED. This Router records and logs user IP addresses.^C
+!
+line con 0
+ exec-timeout 15 0
+ stopbits 1
+line aux 0
+line vty 0 4
+ exec-timeout 15 0
+ length 0
+ transport input ssh
+line vty 5 80
+ exec-timeout 15 0
+ transport input ssh
+!
+call-home
+ ! If contact email address in call-home is configured as sch-smart-licensing@cisco.com
+ ! the email address configured in Cisco Smart License Portal will be used as contact email address to send SCH notifications.
+ contact-email-addr sch-smart-licensing@cisco.com
+ profile "CiscoTAC-1"
+  active
+  destination transport-method http
+ntp source GigabitEthernet0
+ntp server vrf Mgmt-intf 10.104.81.5
+ntp server vrf Mgmt-intf 10.105.81.5
+nat64 translation timeout udp 300
+nat64 translation timeout tcp 3600
+!
+!
+!
+!
+!
+!
+netconf-yang
+netconf-yang feature candidate-datastore
+end
+
+nzlr-sdwan-ir01#'
+% Bad IP address or host name% Unknown command or computer name, or unable to find computer address
+nzlr-sdwan-ir01#
+nzlr-sdwan-ir01#
+nzlr-sdwan-ir01#
+nzlr-sdwan-ir01#show run
+nzlr-sdwan-ir01#show running-config s
+nzlr-sdwan-ir01#show sd                           
+nzlr-sdwan-ir01#show sd
+nzlr-sdwan-ir01#show run
+nzlr-sdwan-ir01#show running-config sd
+nzlr-sdwan-ir01#show running-config ? 
+  aaa            Show AAA configurations
+  all            Configuration with defaults
+  auto-upgrade   Show running auto-upgrade config
+  bridge-domain  Show running bridge domain
+  brief          configuration without certificate data
+  class-map      Show class-map information
+  cts            Show CTS configurations
+  dial-peer      show dial-peer voice configurations
+  eap            Show EAP configuration
+  flow           Global Flow configuration subcommands
+  full           full configuration
+  identity       Show identity profile/policy information
+  interface      Show interface configuration
+  ip             IPv4 subcommands
+  ipv6           IPv6 subcommands
+  linenum        Display line numbers in output
+  map-class      Show map class information
+  mdns-sd        Show mDNS-SD configurations
+  nve            Show network virtualization overlay configuration
+  partition      Configuration corresponding a partition
+  performance    Show global performance monitor configuration
+  policy-map     Show policy-map information
+  service-group  Show running service-group
+  view           View options
+  vnet           Show Virtual NETwork aware configuration
+  vrf            Show VRF aware configuration
+  |              Output modifiers
+  <cr>           <cr>
+
+nzlr-sdwan-ir01#                    
+nzlr-sdwan-ir01#
+nzlr-sdwan-ir01#
+nzlr-sdwan-ir01#
+nzlr-sdwan-ir01#
+nzlr-sdwan-ir01#show run
+nzlr-sdwan-ir01#show sd              
+nzlr-sdwan-ir01#show sd-w
+nzlr-sdwan-ir01#show sd ?
+% Ambiguous command:  "show sd "
+nzlr-sdwan-ir01#show sdwan run
+nzlr-sdwan-ir01#show sdwan running-config 
+system
+ system-ip             10.106.16.20
+ overlay-id            1
+ site-id               101
+ port-offset           0
+ control-session-pps   300
+ admin-tech-on-failure
+ sp-organization-name  "SD-WAN-PROD - 562421"
+ organization-name     "SD-WAN-PROD - 562421"
+ port-hop
+ track-transport
+ track-default-gateway
+ console-baud-rate     9600
+ no on-demand enable
+ on-demand idle-timeout 10
+ vbond nz-corpmgmt-vbd port 12346
+!
+banner login \x03NZ Network Services Authentication\x03
+banner motd \x03This network, information about its components and information systems within it are CONFIDENTIAL to Australia and New Zealand Banking Group Limited ACN 005 357 522 (ANZ). Access to or use of this network by unauthorised people (including by ANZ subsidiaries and their personnel) or for any other unauthorised purpose is STRICTLY PROHIBITED. This Router records and logs user IP addresses.\x03
+service tcp-keepalives-in
+service tcp-keepalives-out
+no service tcp-small-servers
+no service udp-small-servers
+hostname nzlr-sdwan-ir01
+username netsupp privilege 15 secret 9 $9$2VQL3l2L1kwD3k$yal2.ntvLLGwUvcEfU5fW/gK4vYoMUNl9.dupgkEzRk
+vrf definition 10
+ description Service VPN
+ rd          1:10
+ address-family ipv4
+  route-target export 64928:10
+  route-target import 64928:10
+  exit-address-family
+ !
+ address-family ipv6
+  exit-address-family
+ !
+!
+vrf definition Mgmt-intf
+ description Management VPN 512 (OOB)
+ rd          1:512
+ address-family ipv4
+  route-target export 64928:512
+  route-target import 64928:512
+  exit-address-family
+ !
+ address-family ipv6
+  exit-address-family
+ !
+!
+ip arp proxy disable
+no ip finger
+no ip rcmd rcp-enable
+no ip rcmd rsh-enable
+ip bgp-community new-format
+ip cef load-sharing algorithm include-ports source destination
+no ip domain lookup
+ip domain name net.anznb.co.nz
+no ip dhcp use class
+ip host nz-corpmgmt-vbd 210.55.246.166 210.55.246.181
+ip route 10.22.7.17 255.255.255.255 210.55.246.161
+ip route 210.55.246.176 255.255.255.240 210.55.246.161
+ip route vrf Mgmt-intf 0.0.0.0 0.0.0.0 10.24.92.254
+no ip bootp server
+no ip source-route
+ip ssh time-out 60
+ip ssh version 2
+ip community-list expanded EXP-COMM-bgp-in-1 permit 64990:123
+no ip http server
+no ip http secure-server
+ip nat settings central-policy
+ipv6 cef load-sharing algorithm include-ports source destination
+cdp run
+interface GigabitEthernet0
+ description   VPN512 Management Interface
+ no shutdown
+ arp timeout 1200
+ vrf forwarding Mgmt-intf
+ ip address 10.24.92.31 255.255.255.0
+ no ip redirects
+ ip mtu    1500
+ load-interval 30
+ mtu           1500
+ negotiation auto
+exit
+interface GigabitEthernet0/0/0
+ description   To Branch FW (via nzlr-fwpubcom-as101)
+ no shutdown
+ arp timeout 1200
+ ip address 210.55.246.162 255.255.255.240
+ no ip redirects
+ ip mtu    1500
+ load-interval 30
+ mtu           1500
+ negotiation auto
+exit
+interface GigabitEthernet0/0/1
+ no shutdown
+exit
+interface GigabitEthernet0/0/2
+ no shutdown
+exit
+interface GigabitEthernet0/0/3
+ description   nzlr-sdwan-ir02
+ no shutdown
+ arp timeout 1200
+ vrf forwarding 10
+ ip address 10.106.17.101 255.255.255.252
+ no ip redirects
+ ip mtu    1500
+ load-interval 30
+ mtu           1500
+ negotiation auto
+exit
+interface GigabitEthernet0/0/4
+ description   nzlr-corpcom-is02
+ no shutdown
+ arp timeout 1200
+ vrf forwarding 10
+ ip address 10.106.18.106 255.255.255.252
+ no ip redirects
+ ip mtu    1500
+ load-interval 30
+ mtu           1500
+ negotiation auto
+exit
+interface GigabitEthernet0/0/5
+ description   nzlr-corpcom-is01
+ no shutdown
+ arp timeout 1200
+ vrf forwarding 10
+ ip address 10.106.17.106 255.255.255.252
+ no ip redirects
+ ip mtu    1500
+ load-interval 30
+ mtu           1500
+ negotiation auto
+exit
+interface TenGigabitEthernet0/0/0
+ no shutdown
+exit
+interface TenGigabitEthernet0/0/1
+ no shutdown
+exit
+interface Tunnel0
+ no shutdown
+ ip unnumbered GigabitEthernet0/0/0
+ no ip redirects
+ ipv6 unnumbered GigabitEthernet0/0/0
+ no ipv6 redirects
+ tunnel source GigabitEthernet0/0/0
+ tunnel mode sdwan
+ tunnel path-mtu-discovery
+exit
+route-map bgp-in deny 1
+ match community EXP-COMM-bgp-in-1
+!
+route-map bgp-in permit 65535
+!
+route-map omp-to-bgp permit 1
+ set community 64980:123
+!
+route-map omp-to-bgp deny 65535
+!
+clock summer-time nzdt recurring last Sun Sep 2:00 1 Sun Apr 3:00
+clock timezone NZST 12 0
+logging persistent size 104857600 filesize 10485760
+no logging monitor
+logging buffered 512000
+no logging console
+logging trap informational
+logging host 10.103.63.1 vrf Mgmt-intf
+logging host 10.103.63.2 vrf Mgmt-intf
+logging host 10.105.248.201 vrf Mgmt-intf
+logging host 10.105.248.201 vrf Mgmt-intf transport udp port 10558
+logging source-interface GigabitEthernet0 vrf Mgmt-intf
+aaa group server tacacs+ tacacs-512
+ server-private 10.100.3.71 port 49 timeout 5 key 6 CEBL^ANS^HDeIWZEITW^RJKJeHQVQGPQFUMGNW^
+ server-private 10.100.131.71 port 49 timeout 5 key 6 DNcVT]QYaHDagRhNIcITDTaFENMLcaAFVQHeWic
+ ip tacacs source-interface GigabitEthernet0
+ ip vrf forwarding Mgmt-intf
+!
+aaa authentication login default group tacacs-512 local
+aaa authorization exec default group tacacs-512 local
+aaa server radius dynamic-author
+!
+router bgp 64928
+ bgp log-neighbor-changes
+ neighbor 10.22.7.17 remote-as 65401
+ neighbor 10.22.7.17 description nzlr-fwperiext-as01
+ neighbor 10.22.7.17 ebgp-multihop 2
+ neighbor 10.22.7.17 password 7 154B521F5C2E381729
+ address-family ipv4 unicast vrf 10
+  distance bgp 20 200 20
+  neighbor 10.106.17.102 remote-as 64928
+  neighbor 10.106.17.102 activate
+  neighbor 10.106.17.102 description nzlr-sdwan-ir02
+  neighbor 10.106.17.102 next-hop-self
+  neighbor 10.106.17.102 password 7 135C4E01530817192A
+  neighbor 10.106.17.102 route-map bgp-in in
+  neighbor 10.106.17.102 send-community both
+  neighbor 10.106.17.105 remote-as 64980
+  neighbor 10.106.17.105 activate
+  neighbor 10.106.17.105 description nzlr-corpcom-is01
+  neighbor 10.106.17.105 password 7 12405C044A0F1F372B
+  neighbor 10.106.17.105 route-map bgp-in in
+  neighbor 10.106.17.105 send-community both
+  neighbor 10.106.18.105 remote-as 64980
+  neighbor 10.106.18.105 activate
+  neighbor 10.106.18.105 description nzlr-corpcom-is02
+  neighbor 10.106.18.105 password 7 005D4A155C5F18350E
+  neighbor 10.106.18.105 route-map bgp-in in
+  neighbor 10.106.18.105 send-community both
+  redistribute connected
+  redistribute omp route-map omp-to-bgp
+  exit-address-family
+ !
+ address-family ipv4 unicast
+  distance bgp 20 200 20
+  neighbor 10.22.7.17 activate
+  redistribute connected
+  exit-address-family
+ !
+ timers bgp 60 180
+!
+snmp-server community 6 TedTSGJSFcRiGacQbcLQVHbcKHXJUTKDBfg]RLDAAB ro
+snmp-server contact nzimnetworkservices@anz.com 0800 080661
+snmp-server enable traps
+snmp-server host 10.103.63.1 vrf 10 version 2c 6 AYcRHFFBMZ]IbRVAQTUhORXYXaFcg_IMCQId_MAAAB udp-port 161
+snmp-server host 10.103.63.2 vrf 10 version 2c 6 AYcRHFFBMZ]IbRVAQTUhORXYXaFcg_IMCQId_MAAAB udp-port 161
+snmp-server ifindex persist
+snmp-server location Lady Ruby DC, Auckland
+snmp-server trap timeout 30
+snmp-server trap-source GigabitEthernet0
+line aux 0
+ stopbits 1
+!
+line con 0
+ exec-timeout 15 0
+ speed    9600
+ stopbits 1
+!
+line vty 0 4
+ exec-timeout 15 0
+ transport input ssh
+!
+line vty 5 80
+ exec-timeout 15 0
+ transport input ssh
+!
+ntp server vrf Mgmt-intf 10.104.81.5 version 4
+ntp server vrf Mgmt-intf 10.105.81.5 version 4
+ntp source GigabitEthernet0
+lldp run
+nat64 translation timeout tcp 3600
+nat64 translation timeout udp 300
+sdwan
+ service TE vrf global
+ !
+ interface GigabitEthernet0/0/0
+  tunnel-interface
+   encapsulation ipsec weight 1
+   no border
+   color biz-internet
+   no last-resort-circuit
+   no low-bandwidth-link
+   no vbond-as-stun-server
+   vmanage-connection-preference 5
+   port-hop
+   carrier                       default
+   nat-refresh-interval          5
+   hello-interval                1000
+   hello-tolerance               12
+   no allow-service all
+   allow-service bgp
+   allow-service dhcp
+   allow-service dns
+   allow-service icmp
+   no allow-service sshd
+   no allow-service netconf
+   no allow-service ntp
+   no allow-service ospf
+   no allow-service stun
+   allow-service https
+   no allow-service snmp
+   no allow-service bfd
+  exit
+ exit
+ appqoe
+  no tcpopt enable
+  no dreopt enable
+ !
+ omp
+  no shutdown
+  send-path-limit  4
+  ecmp-limit       4
+  graceful-restart
+  no as-dot-notation
+  timers
+   holdtime               60
+   advertisement-interval 1
+   graceful-restart-timer 172800
+   eor-timer              300
+  exit
+  address-family ipv4 vrf 10
+   advertise bgp
+  !
+  address-family ipv4
+   advertise bgp
+   advertise connected
+   advertise static
+  !
+  address-family ipv6
+   advertise connected
+   advertise static
+  !
+ !
+!
+licensing config enable false
+licensing config privacy hostname false
+licensing config privacy version false
+licensing config utility utility-enable false
+bfd default-dscp 48
+bfd app-route multiplier 6
+bfd app-route poll-interval 600000
+security
+ ipsec
+  rekey          345600
+  replay-window  512
+  integrity-type esp ip-udp-esp
+ !
+!
+policy
+ no app-visibility
+ no app-visibility-ipv6
+ flow-visibility
+ flow-visibility-ipv6
+ no implicit-acl-logging
+ log-frequency        1000
+!
+
+nzlr-sdwan-ir01#
+nzlr-sdwan-ir01#
+nzlr-sdwan-ir01#
+nzlr-sdwan-ir01#
+nzlr-sdwan-ir01#
+nzlr-sdwan-ir01#
+nzlr-sdwan-ir01#
+nzlr-sdwan-ir01#show om
+nzlr-sdwan-ir01#show ompe perr
+nzlr-sdwan-ir01#show omp peers
+                      ^
+% Invalid input detected at '^' marker.
+
+nzlr-sdwan-ir01#show omp peers ?
+% Unrecognized command
+nzlr-sdwan-ir01#               
+nzlr-sdwan-ir01#
+nzlr-sdwan-ir01#
+nzlr-sdwan-ir01#
+nzlr-sdwan-ir01#
+nzlr-sdwan-ir01#show omp peers 
+                      ^
+% Invalid input detected at '^' marker.
+
